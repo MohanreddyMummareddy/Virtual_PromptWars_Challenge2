@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="An interactive, gamified guide mapping out your civic journey to Election Day.">
+    <title>The Civic Journey</title>
+    <!-- Google Fonts for Modern Typography -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=Outfit:wght@500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <!-- Accessibility Region for Screen Readers -->
+    <div id="aria-live-announcer" class="sr-only" aria-live="polite" aria-atomic="true"></div>
+
+    <section id="onboarding-screen" class="screen active" aria-labelledby="onboarding-title">
+        <div class="background-decor blob1" aria-hidden="true"></div>
+        <div class="background-decor blob2" aria-hidden="true"></div>
+        <div class="glass-card">
+            <h1 id="onboarding-title">Start Your Civic Journey</h1>
+            <p>Enter your state to begin your personalized path to Election Day.</p>
+            <div class="input-group">
+                <input type="text" id="state-input" placeholder="e.g., Maharashtra, Karnataka..." aria-label="Enter your state">
+                <button id="start-journey-btn" aria-label="Start your journey">Let's Go</button>
+            </div>
+        </div>
+    </section>
+
+    <main id="journey-screen" class="screen hidden" aria-labelledby="header-location">
+        <header>
+            <h2 id="header-location" tabindex="-1">My Civic Journey</h2>
+            <div class="progress-bar-container" aria-hidden="true">
+                <div id="progress-fill"></div>
+            </div>
+        </header>
+
+        <section class="map-container" aria-label="Interactive Map of the Voting Process">
+            <svg class="path-svg" viewBox="0 0 800 600" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
+                <path d="M 100,500 C 100,200 400,500 400,250 C 400,100 700,300 700,50" 
+                      fill="none" stroke="rgba(255,255,255,0.2)" stroke-width="15" stroke-linecap="round"/>
+                <path d="M 100,500 C 100,200 400,500 400,250 C 400,100 700,300 700,50" 
+                      fill="none" stroke="#4dabf7" stroke-width="5" stroke-dasharray="10 10" class="animated-path"/>
+            </svg>
+
+            <div class="map-nodes">
+                <!-- Using div with tabindex/role enables keyboard navigation -->
+                <div class="node" tabindex="0" role="button" aria-label="Step 1: Check Registration" style="left: 10%; top: 80%;" data-stop="1" data-title="Check Registration">
+                    <div class="node-circle pulse" aria-hidden="true">1</div>
+                    <div class="node-label">Registration</div>
+                </div>
+                <div class="node" tabindex="0" role="button" aria-label="Step 2: Mail-in Deadlines" style="left: 30%; top: 55%;" data-stop="2" data-title="Mail-in Deadlines">
+                    <div class="node-circle" aria-hidden="true">2</div>
+                    <div class="node-label">Mail-in Rules</div>
+                </div>
+                <div class="node" tabindex="0" role="button" aria-label="Step 3: Research Candidates" style="left: 50%; top: 40%;" data-stop="3" data-title="Research Candidates">
+                    <div class="node-circle" aria-hidden="true">3</div>
+                    <div class="node-label">Candidates</div>
+                </div>
+                <div class="node" tabindex="0" role="button" aria-label="Step 4: Find Polling Place" style="left: 70%; top: 25%;" data-stop="4" data-title="Find Polling Place">
+                    <div class="node-circle" aria-hidden="true">4</div>
+                    <div class="node-label">Polling Place</div>
+                </div>
+                <div class="node" tabindex="0" role="button" aria-label="Step 5: Election Day Guidance" style="left: 85%; top: 5%;" data-stop="5" data-title="Election Day">
+                    <div class="node-circle" aria-hidden="true">5</div>
+                    <div class="node-label">Election Day</div>
+                </div>
+            </div>
+        </section>
+        
+        <!-- Assistant Modal -->
+        <aside id="assistant-panel" class="glass-panel hidden" aria-labelledby="assistant-title" role="dialog" aria-modal="false">
+            <div class="panel-header">
+                <div>
+                  <h3 id="assistant-title" class="gradient-text">Tour Guide</h3>
+                  <span class="online-indicator" aria-hidden="true"></span>
+                </div>
+                <button id="close-panel-btn" aria-label="Close Assistant Panel">&times;</button>
+            </div>
+            <div class="current-stop-info">
+                <h4 id="stop-title-display" aria-live="polite">Stop Title</h4>
+                <div id="calendar-link-container"></div>
+            </div>
+            <div id="chat-history" aria-live="polite" role="log">
+                <!-- Chat messages injected here -->
+            </div>
+            <div class="chat-input-area">
+                <input type="text" id="chat-input" placeholder="Ask about this stop..." aria-label="Type your question here">
+                <button id="send-chat-btn" aria-label="Send message">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+                </button>
+            </div>
+        </aside>
+    </main>
+
+    <!-- ES6 Module import -->
+    <script type="module" src="/static/js/app.js"></script>
+</body>
+</html>
