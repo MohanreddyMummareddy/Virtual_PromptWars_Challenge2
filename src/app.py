@@ -10,11 +10,10 @@ from src.gcp_setup import check_and_enable_gcp_apis
 mimetypes.add_type('application/javascript', '.js')
 
 # Configure logging
-log_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'app.log')
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s [%(levelname)s] %(name)s: %(message)s',
-    handlers=[logging.FileHandler(log_file), logging.StreamHandler()]
+    handlers=[logging.StreamHandler()]
 )
 
 def create_app(config_class=Config):
@@ -35,7 +34,7 @@ def create_app(config_class=Config):
     location = app.config.get('GOOGLE_CLOUD_LOCATION') or os.getenv('GOOGLE_CLOUD_LOCATION', 'us-central1')
 
     if not project_id:
-        raise RuntimeError("GOOGLE_CLOUD_PROJECT not detected. Active Cloud Shell session required.")
+        raise RuntimeError("GOOGLE_CLOUD_PROJECT environment variable is required.")
 
     # 1. Connect and Verify Google Services APIs
     check_and_enable_gcp_apis(project_id)
@@ -70,14 +69,7 @@ def create_app(config_class=Config):
 
     @app.route('/api/system/logs')
     def get_server_logs():
-        """Endpoint to download the server-side log file."""
-        try:
-            if not os.path.exists(log_file):
-                return "Log file not yet created.", 404
-            return send_file(log_file, as_attachment=True, download_name='server_logs.log')
-        except Exception as e:
-            logging.error(f"Failed to serve logs: {e}")
-            return f"Error retrieving logs: {str(e)}", 500
+        return jsonify({"message": "In production, logs are available via Google Cloud Logging (stdout)."}), 200
 
     return app
 
