@@ -22,7 +22,7 @@ class LLMService:
             import vertexai
             from vertexai.generative_models import GenerativeModel
             vertexai.init(project=self.project_id, location=self.location)
-            self.model = GenerativeModel("gemini-1.5-flash")
+            self.model = GenerativeModel("gemini-2.5-flash")
             logger.info(f"Initialized Vertex AI for project: {self.project_id}")
         except Exception as e:
             logger.error(f"Error initializing LLM: {e}")
