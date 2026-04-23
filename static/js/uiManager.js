@@ -28,8 +28,10 @@ export default class UIManager {
 
     showJourneyMap(state) {
         this.headerLocation.innerText = `My Civic Journey: ${state}`;
+        this.onboardingScreen.classList.add('hidden');
         this.onboardingScreen.classList.remove('active');
         this.journeyScreen.classList.remove('hidden');
+        this.journeyScreen.classList.add('active');
         
         // Accessibility focus shift
         this.headerLocation.focus();

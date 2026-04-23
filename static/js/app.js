@@ -9,7 +9,7 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Application State
     let state = {
-        userLocation: '',
+        zipCode: '',
         currentStopTitle: ''
     };
 
@@ -17,19 +17,29 @@ document.addEventListener('DOMContentLoaded', () => {
     const startJourneyBtn = document.getElementById('start-journey-btn');
     const stateInput = document.getElementById('state-input');
     
-    const handleStart = () => {
-        if(stateInput.value.trim() !== '') {
-            state.userLocation = stateInput.value.trim();
-            ui.showJourneyMap(state.userLocation);
+    const handleStart = (e) => {
+        if (e) e.preventDefault();
+        
+        const pincodeRegex = /^[1-9][0-9]{5}$/;
+        const val = stateInput.value.trim();
+
+        if(pincodeRegex.test(val)) {
+            state.zipCode = val;
+            console.log(`Starting journey for Zip: ${state.zipCode}`);
+            ui.announce(`Loading your journey for ${state.zipCode}`);
+            ui.showJourneyMap(state.zipCode);
         } else {
-            alert('Please enter your state to continue.');
+            alert('Please enter a valid 6-digit Indian Pincode to continue.');
             stateInput.focus();
         }
     };
 
-    startJourneyBtn.addEventListener('click', handleStart);
+    if (startJourneyBtn) {
+        startJourneyBtn.addEventListener('click', handleStart);
+    }
+
     stateInput.addEventListener('keypress', (e) => {
-        if(e.key === 'Enter') handleStart();
+        if(e.key === 'Enter') handleStart(e);
     });
 
     // Bind map nodes
@@ -69,14 +79,16 @@ document.addEventListener('DOMContentLoaded', () => {
         ui.addBotMessage("Thinking...", loadingId);
 
         try {
-            const contextMsg = `User is in ${state.userLocation}. They are asking about the step: ${state.currentStopTitle}.`;
+            const contextMsg = `User is at Zip Code ${state.zipCode}. They are asking about the subway stop: ${state.currentStopTitle}. Provide localized election info.`;
             const responseText = await api.fetchChatResponse(msg, contextMsg);
             
             ui.removeElement(loadingId);
             ui.addBotMessage(responseText);
         } catch (error) {
+            console.error("Chat Error:", error);
             ui.removeElement(loadingId);
-            ui.addBotMessage(error.message);
+            const errorMsg = error.message.includes('503') ? "The AI service is currently warming up." : error.message;
+            ui.addBotMessage(`⚠️ **Connection Issue:** ${errorMsg} Please try again.`);
         }
     };
 
@@ -89,6 +101,15 @@ document.addEventListener('DOMContentLoaded', () => {
     function openAssistant(title, targetNodeId) {
         state.currentStopTitle = title;
         ui.openAssistantPanel(title, targetNodeId);
-        ui.addBotMessage(`Welcome to the **${title}** stop for **${state.userLocation}**. What questions do you have about this process?`);
+        
+        let initialMsg = `Namaste! Welcome to the **${title}** stage of your voting journey in Pincode **${state.zipCode}**. I am your Indian Election Guide. How can I help you prepare?`;
+        
+        if (title.includes("Polling")) {
+            initialMsg += " You can click below to find your designated Polling Station on Google Maps.";
+        } else if (title.includes("Registration")) {
+             initialMsg += " I can help you set a reminder for the registration deadline in your region.";
+        }
+
+        ui.addBotMessage(initialMsg);
     }
 });

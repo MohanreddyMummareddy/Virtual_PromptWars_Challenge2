@@ -8,6 +8,34 @@
     <!-- Google Fonts for Modern Typography -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=Outfit:wght@500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/static/css/style.css">
+    <style>
+        /* Critical Layout Styles to prevent blank screen issues */
+        .screen {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        .hidden {
+            display: none !important;
+        }
+        .active {
+            display: flex !important;
+        }
+        .map-container {
+            flex: 1;
+            position: relative;
+            width: 100%;
+            overflow: hidden;
+            background: rgba(255, 255, 255, 0.05);
+        }
+        .path-svg {
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+    </style>
 </head>
 <body>
     <!-- Accessibility Region for Screen Readers -->
@@ -17,10 +45,10 @@
         <div class="background-decor blob1" aria-hidden="true"></div>
         <div class="background-decor blob2" aria-hidden="true"></div>
         <div class="glass-card">
-            <h1 id="onboarding-title">Start Your Civic Journey</h1>
-            <p>Enter your state to begin your personalized path to Election Day.</p>
+            <h1 id="onboarding-title">Indian Election Journey</h1>
+            <p>Enter your Pincode to navigate your path to the Polling Booth.</p>
             <div class="input-group">
-                <input type="text" id="state-input" placeholder="e.g., Maharashtra, Karnataka..." aria-label="Enter your state">
+                <input type="text" id="state-input" placeholder="Enter 6-digit Pincode" aria-label="Enter your pincode">
                 <button id="start-journey-btn" aria-label="Start your journey">Let's Go</button>
             </div>
         </div>
@@ -44,25 +72,25 @@
 
             <div class="map-nodes">
                 <!-- Using div with tabindex/role enables keyboard navigation -->
-                <div class="node" tabindex="0" role="button" aria-label="Step 1: Check Registration" style="left: 10%; top: 80%;" data-stop="1" data-title="Check Registration">
+                <div class="node" tabindex="0" role="button" aria-label="Step 1: Voter Registration" style="left: 10%; top: 80%;" data-stop="1" data-title="Voter Registration (Form 6)">
                     <div class="node-circle pulse" aria-hidden="true">1</div>
                     <div class="node-label">Registration</div>
                 </div>
-                <div class="node" tabindex="0" role="button" aria-label="Step 2: Mail-in Deadlines" style="left: 30%; top: 55%;" data-stop="2" data-title="Mail-in Deadlines">
+                <div class="node" tabindex="0" role="button" aria-label="Step 2: Check Electoral Roll" style="left: 30%; top: 55%;" data-stop="2" data-title="Electoral Roll Search">
                     <div class="node-circle" aria-hidden="true">2</div>
-                    <div class="node-label">Mail-in Rules</div>
+                    <div class="node-label">Search Roll</div>
                 </div>
-                <div class="node" tabindex="0" role="button" aria-label="Step 3: Research Candidates" style="left: 50%; top: 40%;" data-stop="3" data-title="Research Candidates">
+                <div class="node" tabindex="0" role="button" aria-label="Step 3: Know Your Candidates" style="left: 50%; top: 40%;" data-stop="3" data-title="Candidate Research (KYC)">
                     <div class="node-circle" aria-hidden="true">3</div>
                     <div class="node-label">Candidates</div>
                 </div>
-                <div class="node" tabindex="0" role="button" aria-label="Step 4: Find Polling Place" style="left: 70%; top: 25%;" data-stop="4" data-title="Find Polling Place">
+                <div class="node" tabindex="0" role="button" aria-label="Step 4: Locate Polling Station" style="left: 70%; top: 25%;" data-stop="4" data-title="Polling Station Location">
                     <div class="node-circle" aria-hidden="true">4</div>
-                    <div class="node-label">Polling Place</div>
+                    <div class="node-label">Polling Booth</div>
                 </div>
-                <div class="node" tabindex="0" role="button" aria-label="Step 5: Election Day Guidance" style="left: 85%; top: 5%;" data-stop="5" data-title="Election Day">
+                <div class="node" tabindex="0" role="button" aria-label="Step 5: Voting Day Process" style="left: 85%; top: 5%;" data-stop="5" data-title="Voting Day (EVM/VVPAT)">
                     <div class="node-circle" aria-hidden="true">5</div>
-                    <div class="node-label">Election Day</div>
+                    <div class="node-label">Voting Day</div>
                 </div>
             </div>
         </section>
@@ -91,6 +119,75 @@
             </div>
         </aside>
     </main>
+
+    <!-- Debug & Log Downloader Tool -->
+    <div id="debug-tool" style="position: fixed; bottom: 20px; right: 20px; z-index: 9999;">
+        <button id="download-all-logs" style="background: #ff4757; color: white; border: none; padding: 10px 15px; border-radius: 50px; cursor: pointer; font-family: 'Inter', sans-serif; font-weight: bold; box-shadow: 0 4px 15px rgba(0,0,0,0.3);">
+            ⚠️ Download Debug Logs
+        </button>
+    </div>
+
+    <script>
+        // Global Client-Side Log Capture
+        window.clientLogs = [];
+        const originalLog = console.log;
+        const originalError = console.error;
+
+        console.log = function(...args) {
+            window.clientLogs.push(`[INFO] ${new Date().toISOString()}: ${args.join(' ')}`);
+            originalLog.apply(console, args);
+        };
+
+        console.error = function(...args) {
+            window.clientLogs.push(`[ERROR] ${new Date().toISOString()}: ${args.join(' ')}`);
+            originalError.apply(console, args);
+        };
+
+        window.onerror = function(msg, url, line) {
+            console.error(`Uncaught Error: ${msg} at ${url}:${line}`);
+        };
+
+        document.getElementById('download-all-logs').addEventListener('click', async () => {
+            const btn = document.getElementById('download-all-logs');
+            btn.innerText = "Processing...";
+            
+            try {
+                // 1. Fetch Server Logs
+                const response = await fetch('/api/system/logs');
+                let serverLogs = "";
+                
+                if (!response.ok || response.headers.get('content-type').includes('text/html')) {
+                    serverLogs = "CRITICAL: Could not reach Flask server. The server is likely DOWN or blocked by a proxy.";
+                } else {
+                    serverLogs = await response.text();
+                }
+
+                // 2. Combine with Client Logs
+                const combinedLogs = `=== CLIENT SIDE LOGS ===\n${window.clientLogs.join('\n')}\n\n=== SERVER SIDE LOGS ===\n${serverLogs}`;
+
+                // 3. Trigger Download
+                const blob = new Blob([combinedLogs], { type: 'text/plain' });
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `civic_journey_debug_${Date.now()}.txt`;
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
+                
+                if (serverLogs.includes("CRITICAL")) {
+                   btn.innerText = "❌ SERVER DOWN";
+                } else {
+                   btn.innerText = "✅ Logs Saved";
+                }
+                alert("Logs downloaded! Please share this file to diagnose the 'Continue' button crash.");
+            } catch (err) {
+                alert("Failed to fetch server logs. Downloaded client logs only.");
+                console.error(err);
+                btn.innerText = "Error Downloading";
+            }
+        });
+    </script>
 
     <!-- ES6 Module import -->
     <script type="module" src="/static/js/app.js"></script>
