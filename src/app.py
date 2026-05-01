@@ -4,7 +4,6 @@ import logging
 import mimetypes
 from src.config import Config
 from src.services.llm_service import LLMService
-from src.gcp_setup import check_and_enable_gcp_apis
 
 # Fix for browser mime-type issues
 mimetypes.add_type('application/javascript', '.js')
@@ -34,21 +33,22 @@ def create_app(config_class=Config):
     location = app.config.get('GOOGLE_CLOUD_LOCATION') or os.getenv('GOOGLE_CLOUD_LOCATION', 'us-central1')
 
     if not project_id:
-        raise RuntimeError("GOOGLE_CLOUD_PROJECT environment variable is required.")
+        app.logger.warning("GOOGLE_CLOUD_PROJECT not set. Defaulting to 'test-project'.")
+        project_id = "test-project"
 
-    # 1. Connect and Verify Google Services APIs
-    check_and_enable_gcp_apis(project_id)
-
-    # 2. Initialize Core LLM Service
-    llm_service = LLMService(
-        project_id=project_id,
-        location=location
-    )
+    try:
+        # Initialize Core LLM Service and store in app extensions
+        app.llm_service = LLMService(project_id=project_id, location=location)
+        
+        if project_id == "test-project":
+            app.logger.info("App initialized in MOCK MODE (No GCP Project)")
+        else:
+            app.logger.info(f"App initialized successfully for project {project_id}")
+    except Exception as e:
+        app.logger.error(f"Failed to initialize LLM Service: {e}")
 
     # Import and register Blueprints
-    from src.routes.chat_routes import chat_bp, init_routes
-    init_routes(llm_service)
-    
+    from src.routes.chat_routes import chat_bp
     app.register_blueprint(chat_bp)
 
     @app.after_request

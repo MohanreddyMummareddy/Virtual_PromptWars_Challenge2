@@ -100,8 +100,38 @@ document.addEventListener('DOMContentLoaded', () => {
     // Business Logic Wrapper for opening panel
     function openAssistant(title, targetNodeId) {
         state.currentStopTitle = title;
-        ui.openAssistantPanel(title, targetNodeId);
+        ui.openAssistantPanel(title, targetNodeId, state.zipCode);
         
+        // Handle deep integration for Calendar
+        const calendarBtn = document.getElementById('sync-calendar-btn');
+        if (calendarBtn) {
+            calendarBtn.addEventListener('click', async () => {
+                ui.announce("Syncing with Google Calendar...");
+                try {
+                    const response = await fetch('/api/calendar/invite', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ title, zipCode: state.zipCode })
+                    });
+                    const data = await response.json();
+                    if (data.link) {
+                        const popup = window.open(data.link, '_blank');
+                        if (!popup || popup.closed || typeof popup.closed == 'undefined') {
+                            ui.addBotMessage(`✅ **Calendar Sync:** Event created! Click here to view your calendar (Note: Your browser blocked the automatic popup).`);
+                        } else {
+                            ui.addBotMessage(`✅ **Calendar Sync:** Event created! Opening in a new tab...`);
+                        }
+                    } else if (data.error) {
+                        ui.addBotMessage(`⚠️ **Calendar Sync Error:** ${data.error}`);
+                    } else {
+                        ui.addBotMessage(`✅ **Calendar Sync:** ${data.message}`);
+                    }
+                } catch (e) {
+                    ui.addBotMessage("⚠️ Failed to sync with Google Calendar API.");
+                }
+            });
+        }
+
         let initialMsg = `Namaste! Welcome to the **${title}** stage of your voting journey in Pincode **${state.zipCode}**. I am your Indian Election Guide. How can I help you prepare?`;
         
         if (title.includes("Polling")) {

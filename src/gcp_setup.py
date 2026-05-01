@@ -12,8 +12,10 @@ def check_and_enable_gcp_apis(project_id: str):
     """
     REQUIRED_APIS = [
         "aiplatform.googleapis.com",      # Vertex AI
-        "calendar-json.googleapis.com",   # Google Calendar
-        "maps-backend.googleapis.com"     # Google Maps
+        "calendar.googleapis.com",        # Google Calendar
+        "maps-backend.googleapis.com",    # Google Maps
+        "serviceusage.googleapis.com",    # Service Usage API
+        "iam.googleapis.com"              # Identity and Access Management
     ]
 
     if not project_id:
@@ -24,12 +26,16 @@ def check_and_enable_gcp_apis(project_id: str):
         from googleapiclient.discovery import build
         
         credentials, active_project = google.auth.default(
-            scopes=["https://www.googleapis.com/auth/cloud-platform"]
+            scopes=[
+                "https://www.googleapis.com/auth/cloud-platform",
+                "https://www.googleapis.com/auth/calendar.events",
+                "https://www.googleapis.com/auth/calendar"
+            ]
         )
         
         logger.info(f"Successfully connected to GCP. Verifying APIs for project: {project_id}...")
         
-        # Build the Service Usage API Client
+        # Build the Service Usage API Client to check and enable services
         service = build('serviceusage', 'v1', credentials=credentials)
         project_name = f"projects/{project_id}"
         
@@ -46,14 +52,24 @@ def check_and_enable_gcp_apis(project_id: str):
                 )
                 enable_req.execute()
                 logger.info(f"Successfully enabled {api}.")
+        
+        logger.info("GCP environment readiness check complete.")
 
     except DefaultCredentialsError:
         logger.error("No GCP credentials found. Ensure you are logged into Cloud Shell.")
     except google_exceptions.GoogleAPICallError as e:
+        if "permission" in str(e).lower():
+            logger.error(f"Permission denied for project '{project_id}'. "
+                         "Ensure your account has the 'Service Usage Admin' or 'Owner' role.")
         logger.error(f"Failed to communicate with GCP API: {e}")
     except Exception as e:
         logger.error(f"An unexpected error occurred during GCP setup: {e}")
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
-    check_and_enable_gcp_apis(os.getenv("GOOGLE_CLOUD_PROJECT"))
+    project = os.getenv("GOOGLE_CLOUD_PROJECT")
+    if not project:
+        print("ERROR: GOOGLE_CLOUD_PROJECT environment variable is not set.")
+        print("Run: export GOOGLE_CLOUD_PROJECT='your-project-id'")
+    else:
+        check_and_enable_gcp_apis(project)

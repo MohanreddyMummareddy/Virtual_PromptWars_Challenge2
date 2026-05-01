@@ -40,12 +40,13 @@ export default class UIManager {
         const animatedPath = document.querySelector('.animated-path');
         if (animatedPath) {
             animatedPath.style.animation = 'none';
-            animatedPath.offsetHeight; /* trigger reflow */
-            animatedPath.style.animation = 'drawPath 2s linear forwards';
+            requestAnimationFrame(() => {
+                animatedPath.style.animation = 'drawPath 2s linear forwards';
+            });
         }
     }
 
-    openAssistantPanel(title, targetNodeId) {
+    openAssistantPanel(title, targetNodeId, zipCode = '') {
         this.nodes.forEach(n => n.classList.remove('active'));
         const activeNode = document.querySelector(`[data-stop="${targetNodeId}"]`);
         if (activeNode) activeNode.classList.add('active');
@@ -54,12 +55,13 @@ export default class UIManager {
         
         if (this.assistantPanel.classList.contains('hidden')) {
             this.assistantPanel.classList.remove('hidden');
-            void this.assistantPanel.offsetWidth; 
-            this.assistantPanel.classList.add('show');
+            requestAnimationFrame(() => {
+                this.assistantPanel.classList.add('show');
+            });
         }
         
         this.clearChat();
-        this.generateCalendarLinks(title, "Your State");
+        this.generateCalendarLinks(title, zipCode);
         
         // Accessibility
         this.announce(`${title} panel opened.`);
@@ -107,6 +109,7 @@ export default class UIManager {
         if (isMarkup) {
             let formatted = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
             formatted = formatted.replace(/\n/g, '<br>');
+            formatted = formatted.replace(/\[(.*?)\]\((.*?)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer" style="color: var(--accent);">$1</a>');
             div.innerHTML = formatted;
         } else {
             div.innerText = text;
@@ -114,40 +117,48 @@ export default class UIManager {
         return div;
     }
 
-    generateCalendarLinks(title, userState) {
+    generateCalendarLinks(title, zipCode) {
         this.calendarContainer.innerHTML = '';
         
         const eventTitle = encodeURIComponent(`${title} Deadline`);
-        const eventDetails = encodeURIComponent(`Reminder for ${title} process in ${userState}.`);
+        const eventDetails = encodeURIComponent(`Reminder for ${title} process.`);
         
-        const btn = document.createElement('a');
-        btn.href = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${eventTitle}&details=${eventDetails}`;
-        btn.target = "_blank";
+        const btn = document.createElement('button');
         btn.className = 'calendar-integration-btn';
+        btn.id = 'sync-calendar-btn';
         btn.setAttribute('aria-label', `Add ${title} deadline to Google Calendar`);
         btn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:5px;vertical-align:bottom;"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg> Add to Google Calendar`;
-        
         btn.style.display = "inline-block";
         btn.style.marginTop = "0.5rem";
         btn.style.fontSize = "0.8rem";
-        btn.style.color = "var(--accent)";
+        btn.style.color = "#ffffff";
+        btn.style.backgroundColor = "var(--accent)";
+        btn.style.padding = "6px 12px";
+        btn.style.borderRadius = "6px";
+        btn.style.border = "none";
+        btn.style.cursor = "pointer";
         btn.style.textDecoration = "none";
         btn.style.marginRight = "10px";
         
-        if(title.includes("Registration") || title.includes("Election Day") || title.includes("Deadlines")) {
+        const lowerTitle = title.toLowerCase();
+        if(lowerTitle.includes("registration") || lowerTitle.includes("election") || lowerTitle.includes("deadline") || lowerTitle.includes("reminder")) {
             this.calendarContainer.appendChild(btn);
         }
         
-        if (title.includes("Polling Place") || title.includes("Election Day")) {
+        if (lowerTitle.includes("polling") || lowerTitle.includes("booth") || lowerTitle.includes("election") || lowerTitle.includes("station")) {
              const mapBtn = document.createElement('a');
-             mapBtn.href = `https://www.google.com/maps/search/polling+places+in+${userState}`;
+             mapBtn.href = `https://www.google.com/maps/search/polling+booth+near+${zipCode}`;
              mapBtn.target = "_blank";
              mapBtn.setAttribute('aria-label', 'Find polling places near me on Google Maps');
              mapBtn.style.display = "inline-block";
              mapBtn.style.marginTop = "0.5rem";
              mapBtn.style.fontSize = "0.8rem";
-             mapBtn.style.color = "#40c057";
+             mapBtn.style.color = "#ffffff";
+             mapBtn.style.backgroundColor = "#28a745";
+             mapBtn.style.padding = "6px 12px";
+             mapBtn.style.borderRadius = "6px";
              mapBtn.style.textDecoration = "none";
+             mapBtn.style.cursor = "pointer";
              mapBtn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:5px;vertical-align:bottom;"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg> Find on Google Maps`;
              this.calendarContainer.appendChild(mapBtn);
         }

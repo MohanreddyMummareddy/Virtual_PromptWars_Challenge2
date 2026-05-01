@@ -1,49 +1,14 @@
-# Byte-compiled / optimized / DLL files
+# Python
 __pycache__/
 *.py[cod]
 *$py.class
-
-# Virtual Environments
+.venv/
 venv/
-myenv/
-env/
 ENV/
-env.bak/
-venv.bak/
 
-# Environment Variables
+# Environment variables
 .env
-.env.local
-.env.*
 
-# OS generated files
-.DS_Store
-.DS_Store?
-._*
-.Spotlight-V100
-.Trashes
-ehthumbs.db
-Thumbs.db
-
-# Flask specific
-instance/
-.webassets-cache
-
-# Testing / Tooling
-.pytest_cache/
-coverage.xml
-*.cover
-.coverage
-htmlcov/
-.tox/
-.mypy_cache/
-
-# IDEs and Editors
+# IDEs
 .vscode/
 .idea/
-*.swp
-*.swo
-
-# GCP/Docker
-*.log
-.gcp/

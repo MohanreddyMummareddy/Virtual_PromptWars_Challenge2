@@ -35,7 +35,7 @@ pip install -r requirements.txt
 
 You must have a GCP project with Vertex AI API enabled. First, authenticate locally:
 ```bash
-gcloud auth application-default login
+gcloud auth application-default login --scopes="https://www.googleapis.com/auth/calendar.events,https://www.googleapis.com/auth/calendar,https://www.googleapis.com/auth/cloud-platform"
 ```
 
 Then, copy the environment template:
@@ -48,7 +48,7 @@ Edit the `.env` file to replace `your-gcp-project-id` with your actual project I
 
 ### 3. Run the Application
 
-Start the Flask application using Waitress (Production) or Python directly (Development):
+**Local Development:**
 ```bash
 python src/app.py
 ```
