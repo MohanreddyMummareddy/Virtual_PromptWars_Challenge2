@@ -1,0 +1,18 @@
+.gcloudignore
+.git
+.gitignore
+
+# Python build artifacts
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Environments
+.env
+.venv
+env/
+venv/
+ENV/
+
+# IDEs
+.vscode/
