@@ -15,7 +15,10 @@ def check_and_enable_gcp_apis(project_id: str):
         "calendar.googleapis.com",        # Google Calendar
         "maps-backend.googleapis.com",    # Google Maps
         "serviceusage.googleapis.com",    # Service Usage API
-        "iam.googleapis.com"              # Identity and Access Management
+        "iam.googleapis.com",             # Identity and Access Management
+        "translate.googleapis.com",       # Cloud Translation API
+        "logging.googleapis.com",         # Cloud Logging API
+        "walletobjects.googleapis.com"    # Google Wallet API
     ]
 
     if not project_id:

@@ -3,12 +3,12 @@ export default class ApiService {
         this.endpoint = endpoint;
     }
 
-    async fetchChatResponse(message, context) {
+    async fetchChatResponse(message, context, language) {
         try {
             const response = await fetch(this.endpoint, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ message, context })
+                body: JSON.stringify({ message, context, language })
             });
 
             const data = await response.json();

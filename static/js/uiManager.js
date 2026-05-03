@@ -15,6 +15,7 @@ export default class UIManager {
         this.chatHistory = document.getElementById('chat-history');
         this.chatInput = document.getElementById('chat-input');
         this.calendarContainer = document.getElementById('calendar-link-container');
+        this.languageSelect = document.getElementById('language-select');
         
         // Accessibility Announcer
         this.ariaAnnouncer = document.getElementById('aria-live-announcer');
@@ -46,7 +47,7 @@ export default class UIManager {
         }
     }
 
-    openAssistantPanel(title, targetNodeId, zipCode = '') {
+    openAssistantPanel(title, targetNodeId, pincode = '') {
         this.nodes.forEach(n => n.classList.remove('active'));
         const activeNode = document.querySelector(`[data-stop="${targetNodeId}"]`);
         if (activeNode) activeNode.classList.add('active');
@@ -61,7 +62,7 @@ export default class UIManager {
         }
         
         this.clearChat();
-        this.generateCalendarLinks(title, zipCode);
+        this.generateCalendarLinks(title, pincode);
         
         // Accessibility
         this.announce(`${title} panel opened.`);
@@ -102,22 +103,40 @@ export default class UIManager {
         this.chatHistory.scrollTop = this.chatHistory.scrollHeight;
     }
 
+    /**
+     * Formats bot responses with basic markdown-like syntax support.
+     */
     _createMessageNode(text, className, isMarkup = false) {
-        const div = document.createElement('div');
-        div.className = `message ${className} scale-in`;
-        
-        if (isMarkup) {
-            let formatted = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
-            formatted = formatted.replace(/\n/g, '<br>');
-            formatted = formatted.replace(/\[(.*?)\]\((.*?)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer" style="color: var(--accent);">$1</a>');
-            div.innerHTML = formatted;
-        } else {
-            div.innerText = text;
+        const wrapper = document.createElement('div');
+        wrapper.className = `message ${className} scale-in`;
+
+        if (!isMarkup) {
+            wrapper.textContent = text;
+            return wrapper;
         }
-        return div;
+
+        // Performance & Security: Use DocumentFragment for safer rendering
+        const fragment = document.createDocumentFragment();
+        const formatted = text
+            .replace(/\*\*(.*?)\*\*/g, '<b>$1</b>')
+            .replace(/\n/g, '<br>')
+            .replace(/\[(.*?)\]\((.*?)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>');
+
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = formatted; // Basic formatting
+        
+        while (tempDiv.firstChild) {
+            fragment.appendChild(tempDiv.firstChild);
+        }
+        wrapper.appendChild(fragment);
+        return wrapper;
     }
 
-    generateCalendarLinks(title, zipCode) {
+    getSelectedLanguage() {
+        return this.languageSelect ? this.languageSelect.value : 'English';
+    }
+
+    generateCalendarLinks(title, pincode) {
         this.calendarContainer.innerHTML = '';
         
         const eventTitle = encodeURIComponent(`${title} Deadline`);
@@ -139,6 +158,17 @@ export default class UIManager {
         btn.style.cursor = "pointer";
         btn.style.textDecoration = "none";
         btn.style.marginRight = "10px";
+
+        // Document Upload Button for Registration
+        if (title.toLowerCase().includes("registration")) {
+            const uploadBtn = document.createElement('button');
+            uploadBtn.id = 'verify-doc-btn';
+            uploadBtn.className = 'calendar-integration-btn';
+            uploadBtn.style.backgroundColor = "#6f42c1";
+            uploadBtn.style.color = "white";
+            uploadBtn.innerHTML = `<span>📷 Verify Document</span><input type="file" id="doc-upload" hidden accept="image/*">`;
+            this.calendarContainer.appendChild(uploadBtn);
+        }
         
         const lowerTitle = title.toLowerCase();
         if(lowerTitle.includes("registration") || lowerTitle.includes("election") || lowerTitle.includes("deadline") || lowerTitle.includes("reminder")) {
@@ -147,7 +177,7 @@ export default class UIManager {
         
         if (lowerTitle.includes("polling") || lowerTitle.includes("booth") || lowerTitle.includes("election") || lowerTitle.includes("station")) {
              const mapBtn = document.createElement('a');
-             mapBtn.href = `https://www.google.com/maps/search/polling+booth+near+${zipCode}`;
+             mapBtn.href = `https://www.google.com/maps/search/polling+booth+near+${pincode}`;
              mapBtn.target = "_blank";
              mapBtn.setAttribute('aria-label', 'Find polling places near me on Google Maps');
              mapBtn.style.display = "inline-block";

@@ -4,6 +4,8 @@ import logging
 import mimetypes
 from src.config import Config
 from src.services.llm_service import LLMService
+from src.services.wallet_service import WalletService
+from src.services.calendar_service import CalendarService
 
 # Fix for browser mime-type issues
 mimetypes.add_type('application/javascript', '.js')
@@ -39,6 +41,8 @@ def create_app(config_class=Config):
     try:
         # Initialize Core LLM Service and store in app extensions
         app.llm_service = LLMService(project_id=project_id, location=location)
+        app.wallet_service = WalletService(project_id=project_id)
+        app.calendar_service = CalendarService()
         
         if project_id == "test-project":
             app.logger.info("App initialized in MOCK MODE (No GCP Project)")
@@ -49,7 +53,9 @@ def create_app(config_class=Config):
 
     # Import and register Blueprints
     from src.routes.chat_routes import chat_bp
+    from src.routes.civic_routes import civic_bp
     app.register_blueprint(chat_bp)
+    app.register_blueprint(civic_bp)
 
     @app.after_request
     def add_security_headers(response):

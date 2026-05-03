@@ -9,8 +9,9 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Application State
     let state = {
-        zipCode: '',
-        currentStopTitle: ''
+        pincode: '',
+        currentStopTitle: '',
+        completedSteps: new Set()
     };
 
     // Bind onboarding events
@@ -24,10 +25,10 @@ document.addEventListener('DOMContentLoaded', () => {
         const val = stateInput.value.trim();
 
         if(pincodeRegex.test(val)) {
-            state.zipCode = val;
-            console.log(`Starting journey for Zip: ${state.zipCode}`);
-            ui.announce(`Loading your journey for ${state.zipCode}`);
-            ui.showJourneyMap(state.zipCode);
+            state.pincode = val;
+            console.log(`Starting journey for Pincode: ${state.pincode}`);
+            ui.announce(`Loading your journey for Pincode ${state.pincode}`);
+            ui.showJourneyMap(state.pincode);
         } else {
             alert('Please enter a valid 6-digit Indian Pincode to continue.');
             stateInput.focus();
@@ -75,12 +76,24 @@ document.addEventListener('DOMContentLoaded', () => {
         ui.addUserMessage(msg);
         chatInput.value = '';
         
+        const lang = ui.getSelectedLanguage();
         const loadingId = 'loading-' + Date.now();
         ui.addBotMessage("Thinking...", loadingId);
 
         try {
-            const contextMsg = `User is at Zip Code ${state.zipCode}. They are asking about the subway stop: ${state.currentStopTitle}. Provide localized election info.`;
-            const responseText = await api.fetchChatResponse(msg, contextMsg);
+            const contextMsg = `User is at Pincode ${state.pincode}. They are asking about the subway stop: ${state.currentStopTitle}. Provide localized Indian election info.`;
+            let responseText = await api.fetchChatResponse(msg, contextMsg, lang);
+            
+            // Idea 4: Structured Output Parsing for Progress
+            if (responseText.includes("PROGRESS_UPDATE:")) {
+                const match = responseText.match(/PROGRESS_UPDATE:\s*\[?(.*?)\]?$/);
+                if (match) {
+                    const step = match[1].trim();
+                    state.completedSteps.add(step);
+                    ui.announce(`Milestone reached: ${step}`);
+                    responseText = responseText.split("PROGRESS_UPDATE:")[0]; // Clean the UI
+                }
+            }
             
             ui.removeElement(loadingId);
             ui.addBotMessage(responseText);
@@ -97,42 +110,84 @@ document.addEventListener('DOMContentLoaded', () => {
         if(e.key === 'Enter') handleSendMessage();
     });
 
+    // Optimized Global Click Handler for Dynamic UI Elements
+    document.addEventListener('click', async (e) => {
+        // Handle Document Verification Trigger
+        if (e.target && (e.target.id === 'verify-doc-btn' || e.target.closest('#verify-doc-btn'))) {
+            document.getElementById('doc-upload').click();
+            return;
+        }
+
+        // Handle Google Calendar Sync
+        if (e.target && e.target.id === 'sync-calendar-btn') {
+            ui.announce("Syncing with Google Calendar...");
+            try {
+                const response = await fetch('/api/calendar/invite', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        title: state.currentStopTitle, 
+                        pincode: state.pincode 
+                    })
+                });
+                const data = await response.json();
+                if (data.link) {
+                    window.open(data.link, '_blank');
+                    ui.addBotMessage(`✅ **Calendar Sync:** Event created! Opening in a new tab...`);
+                } else {
+                    ui.addBotMessage(`⚠️ **Calendar Sync Error:** ${data.error || "Failed to create event."}`);
+                }
+            } catch (err) {
+                ui.addBotMessage("⚠️ Failed to sync with Google Calendar API.");
+            }
+        }
+    });
+
+    // Handle Document Upload Change
+    document.addEventListener('change', async (e) => {
+        if (e.target && e.target.id === 'doc-upload') {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            ui.addBotMessage("🔍 Analyzing your document...");
+            const formData = new FormData();
+            formData.append('file', file);
+
+            try {
+                const res = await fetch('/api/verify-document', { method: 'POST', body: formData });
+                const data = await res.json();
+                ui.addBotMessage(`📄 **Document Analysis:** ${data.analysis}`);
+            } catch (err) {
+                ui.addBotMessage("⚠️ Verification failed. Please try a clearer photo.");
+            }
+        }
+
+        // Handle Wallet Pass Generation
+        if (e.target && e.target.id === 'save-wallet-btn') {
+            ui.announce("Generating your Civic Hero Pass...");
+            try {
+                const res = await fetch('/api/wallet/generate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ pincode: state.pincode })
+                });
+                const data = await res.json();
+                if (data.url) {
+                    window.open(data.url, '_blank');
+                    ui.addBotMessage("🌟 **Success!** Your Civic Hero badge is ready to be saved to your Google Wallet.");
+                }
+            } catch (err) {
+                ui.addBotMessage("⚠️ Could not generate Wallet pass at this time.");
+            }
+        }
+    });
+
     // Business Logic Wrapper for opening panel
     function openAssistant(title, targetNodeId) {
         state.currentStopTitle = title;
-        ui.openAssistantPanel(title, targetNodeId, state.zipCode);
-        
-        // Handle deep integration for Calendar
-        const calendarBtn = document.getElementById('sync-calendar-btn');
-        if (calendarBtn) {
-            calendarBtn.addEventListener('click', async () => {
-                ui.announce("Syncing with Google Calendar...");
-                try {
-                    const response = await fetch('/api/calendar/invite', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ title, zipCode: state.zipCode })
-                    });
-                    const data = await response.json();
-                    if (data.link) {
-                        const popup = window.open(data.link, '_blank');
-                        if (!popup || popup.closed || typeof popup.closed == 'undefined') {
-                            ui.addBotMessage(`✅ **Calendar Sync:** Event created! Click here to view your calendar (Note: Your browser blocked the automatic popup).`);
-                        } else {
-                            ui.addBotMessage(`✅ **Calendar Sync:** Event created! Opening in a new tab...`);
-                        }
-                    } else if (data.error) {
-                        ui.addBotMessage(`⚠️ **Calendar Sync Error:** ${data.error}`);
-                    } else {
-                        ui.addBotMessage(`✅ **Calendar Sync:** ${data.message}`);
-                    }
-                } catch (e) {
-                    ui.addBotMessage("⚠️ Failed to sync with Google Calendar API.");
-                }
-            });
-        }
+        ui.openAssistantPanel(title, targetNodeId, state.pincode);
 
-        let initialMsg = `Namaste! Welcome to the **${title}** stage of your voting journey in Pincode **${state.zipCode}**. I am your Indian Election Guide. How can I help you prepare?`;
+        let initialMsg = `Namaste! Welcome to the **${title}** stage of your voting journey in Pincode **${state.pincode}**. I am your Indian Election Guide. How can I help you prepare?`;
         
         if (title.includes("Polling")) {
             initialMsg += " You can click below to find your designated Polling Station on Google Maps.";

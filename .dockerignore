@@ -1,9 +1,6 @@
-.env
-myenv/
 venv/
-__pycache__/
 *.pyc
-tests/
-.git/
+__pycache__/
+.env
+.git
 .gitignore
-README.md
